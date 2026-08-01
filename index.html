@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محمّل المقاطع النظيفة 🎬</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; font-family: 'Tajawal', sans-serif; transition: all 0.3s ease; }
+        body { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; padding: 20px; color: #f8fafc; }
+        .card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); width: 100%; max-width: 460px; padding: 35px 25px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: center; }
+        h1 { font-size: 26px; margin-bottom: 8px; font-weight: 700; color: #38bdf8; }
+        p { color: #94a3b8; font-size: 14px; margin-bottom: 28px; }
+        .input-group { margin-bottom: 20px; }
+        input[type="url"] { width: 100%; padding: 16px; border-radius: 14px; border: 2px solid #334155; background: #0f172a; color: #fff; font-size: 15px; text-align: center; outline: none; }
+        input[type="url"]:focus { border-color: #38bdf8; box-shadow: 0 0 12px rgba(56, 189, 248, 0.3); }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 25px; }
+        .option-card { background: #0f172a; border: 2px solid #334155; border-radius: 14px; padding: 12px; cursor: pointer; text-align: center; font-size: 13px; font-weight: bold; }
+        .option-card input { display: none; }
+        .option-card:has(input:checked) { border-color: #38bdf8; background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
+        .btn { width: 100%; background: #38bdf8; color: #0f172a; border: none; padding: 16px; font-size: 16px; font-weight: 700; border-radius: 14px; cursor: pointer; }
+        .btn:hover { background: #7dd3fc; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(56, 189, 248, 0.4); }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>محمّل المقاطع النظيفة 🎬</h1>
+    <p>حمّل من تيك توك وانستقرام بدون علامة مائية وبأعلى جودة</p>
+
+    <form action="/api/download" method="POST">
+        <div class="input-group">
+            <input type="url" name="video_url" placeholder="ألصق رابط المقطع هنا..." required autocomplete="off">
+        </div>
+
+        <div class="options-grid">
+            <label class="option-card">
+                <input type="radio" name="remove_music" value="true" checked>
+                <div>🔇 بدون موسيقى</div>
+            </label>
+            <label class="option-card">
+                <input type="radio" name="remove_music" value="false">
+                <div>🎵 بالموسيقى الأصلية</div>
+            </label>
+        </div>
+
+        <button type="submit" class="btn">تحميل المقطع الآن 🚀</button>
+    </form>
+</div>
+
+</body>
+</html>
