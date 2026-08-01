@@ -12,7 +12,11 @@ class handler(BaseHTTPRequestHandler):
       post_data = self.rfile.read(content_length).decode('utf-8')
       params = parse_qs(post_data)
 
-      video_url = params.get('video_url', [''])[0]
+      video_url = params.get('video_url', [''])[0].strip()
+
+      # تنظيف الرابط تلقائياً من أي مسافات أو سلاش زائدة في البداية
+      if video_url.startswith('/'):
+        video_url = video_url[1:]
 
       if not video_url:
         self.send_response(400)
@@ -20,7 +24,6 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(b'URL is required')
         return
 
-      # 1. إعداد الطلب لسيرفر Cobalt مع إضافة User-Agent لمنع خطأ 403 Forbidden
       api_url = 'https://api.cobalt.tools/api/json'
       headers = {
           'Accept': 'application/json',
@@ -44,7 +47,6 @@ class handler(BaseHTTPRequestHandler):
       with urllib.request.urlopen(req) as response:
         res_data = json.loads(response.read().decode('utf-8'))
 
-      # 2. الحصول على رابط التحميل أو إرجاع فيديو المقطع
       download_link = res_data.get('url')
 
       if download_link:
@@ -54,9 +56,7 @@ class handler(BaseHTTPRequestHandler):
       else:
         self.send_response(400)
         self.end_headers()
-        self.wfile.write(
-            b'Could not fetch video. Please check the URL or try another link.'
-        )
+        self.wfile.write(b'Could not fetch video link.')
 
     except Exception as e:
       self.send_response(500)
