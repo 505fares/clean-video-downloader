@@ -9,11 +9,10 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'الرابط مطلوب' });
     }
 
-    // تنظيف الرابط لو ينتهي بشرطة أو رموز زائدة بالبداية
+    // تنظيف الرابط من أي شرطات زائفة بالبداية
     url = url.trim().replace(/^\/+/, '');
 
     try {
-        // 1. جلب الفيديو من TikWM
         const tikwmResponse = await fetch('https://www.tikwm.com/api/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -23,23 +22,19 @@ export default async function handler(req, res) {
         const tikwmData = await tikwmResponse.json();
 
         if (tikwmData.code !== 0) {
-            return res.status(400).json({ error: 'فشل جلب الفيديو، تأكد من صحة رابط التيك توك.' });
+            return res.status(400).json({ error: 'فشل جلب الفيديو، تأكد من الرابط.' });
         }
 
-        const videoUrl = tikwmData.data.play;
-        const musicUrl = tikwmData.data.music;
-
-        // إرجاع النتيجة فوراً لتجنب انتهاء وقت سيرفر Vercel (Timeout)
         return res.status(200).json({
             success: true,
             title: tikwmData.data.title || 'فيديو تيك توك',
             cover: tikwmData.data.cover,
-            videoUrl: videoUrl,
-            cleanAudioUrl: musicUrl
+            videoUrl: tikwmData.data.play,
+            musicUrl: tikwmData.data.music
         });
 
     } catch (error) {
         console.error("Error:", error);
-        return res.status(500).json({ error: 'حدث خطأ في السيرفر' });
+        return res.status(500).json({ error: 'حدث خطأ في الاتصال' });
     }
 }
