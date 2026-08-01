@@ -1,6 +1,5 @@
 import json
-import os
-import subprocess
+import urllib.request
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs
 
@@ -14,7 +13,6 @@ class handler(BaseHTTPRequestHandler):
       params = parse_qs(post_data)
 
       video_url = params.get('video_url', [''])[0]
-      remove_music = params.get('remove_music', ['true'])[0] == 'true'
 
       if not video_url:
         self.send_response(400)
@@ -22,42 +20,39 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(b'URL is required')
         return
 
-      # 1. تنزيل الفيديو بأعلى جودة وبدون حقوق/علامة مائية
-      input_path = '/tmp/input_video.mp4'
-      dl_cmd = f'yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --no-watermark -o "{input_path}" "{video_url}"'
-      subprocess.run(dl_cmd, shell=True, check=True)
+      # 1. طلب التنزيل مباشرة عبر Cobalt API المفتوحة
+      api_url = 'https://api.cobalt.tools/api/json'
+      headers = {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+      }
 
-      final_output = input_path
+      payload = json.dumps({
+          'url': video_url,
+          'videoQuality': 'max',
+          'downloadMode': 'auto',
+      }).encode('utf-8')
 
-      # 2. عزل الصوت والموسيقى بدقة عالية عند اختيار الخيار
-      if remove_music:
-        output_dir = '/tmp/out'
-        subprocess.run(
-            f'demucs --two-stems=vocals {input_path} -o {output_dir}',
-            shell=True,
-            check=True,
-        )
-
-        clean_audio = f'{output_dir}/htdemucs/input_video/vocals.wav'
-        clean_video_path = '/tmp/clean_video.mp4'
-
-        # دمج الصوت المنقى مع الفيديو الأصلي بسرعة عبر FFmpeg
-        merge_cmd = f'ffmpeg -y -i {input_path} -i {clean_audio} -c:v copy -map 0:v:0 -map 1:a:0 {clean_video_path}'
-        subprocess.run(merge_cmd, shell=True, check=True)
-        final_output = clean_video_path
-
-      # 3. إرسال الملف النهائي للمستخدم للتحميل مباشرة
-      self.send_response(200)
-      self.send_header('Content-Type', 'video/mp4')
-      self.send_header(
-          'Content-Disposition', 'attachment; filename="Clean_Video.mp4"'
+      req = urllib.request.Request(
+          api_url, data=payload, headers=headers, method='POST'
       )
-      self.end_headers()
 
-      with open(final_output, 'rb') as f:
-        self.wfile.write(f.read())
+      with urllib.request.urlopen(req) as response:
+        res_data = json.loads(response.read().decode('utf-8'))
+
+      # 2. الحصول على رابط التحميل المباشر والتحويل إليه
+      download_link = res_data.get('url')
+
+      if download_link:
+        self.send_response(302)
+        self.send_header('Location', download_link)
+        self.end_headers()
+      else:
+        self.send_response(500)
+        self.end_headers()
+        self.wfile.write(b'Failed to extract video URL')
 
     except Exception as e:
       self.send_response(500)
       self.end_headers()
-      self.wfile.write(f'Error processing video: {str(e)}'.encode('utf-8'))
+      self.wfile.write(f'Error: {str(e)}'.encode('utf-8'))
