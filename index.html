@@ -28,7 +28,6 @@
     <h1>محمّل المقاطع النظيفة 🎬</h1>
     <p>حمّل من تيك توك وانستقرام بدون علامة مائية وبأعلى جودة</p>
 
-    <!-- تم إزالة action لكي لا نذهب لصفحة سوداء ونعتمد على المتصفح مباشرة -->
     <form id="downloadForm">
         <div class="input-group">
             <input type="url" id="videoUrl" placeholder="ألصق رابط المقطع هنا..." required autocomplete="off">
@@ -43,11 +42,12 @@
 document.getElementById('downloadForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    // تنظيف الرابط من أي مسافات أو سلاش زائدة
+    // تنظيف الرابط من أي مسافات أو سلاش زائدة ومسحها من الشاشة عشان تشوفها بعينك
     let urlInput = document.getElementById('videoUrl').value.trim();
-    if (urlInput.startsWith('/')) {
+    while (urlInput.startsWith('/')) {
         urlInput = urlInput.substring(1);
     }
+    document.getElementById('videoUrl').value = urlInput;
 
     const btn = document.getElementById('submitBtn');
     const status = document.getElementById('status');
@@ -60,24 +60,31 @@ document.getElementById('downloadForm').addEventListener('submit', async (e) => 
     status.innerText = '';
 
     try {
-        // الطلب يخرج من متصفحك مباشرة ليتجاوز حظر Vercel
-        const response = await fetch('https://api.cobalt.tools/api/json', {
+        // محرك 1: مخصص وسريع جداً لتيك توك
+        if (urlInput.includes('tiktok.com')) {
+            const response = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(urlInput)}`);
+            const data = await response.json();
+            if (data.data && data.data.play) {
+                status.className = 'success';
+                status.innerText = 'تم التجهيز! جاري فتح التحميل... 🚀';
+                window.location.href = data.data.play;
+                btn.disabled = false;
+                btn.innerText = 'تحميل المقطع الآن 🚀';
+                return;
+            }
+        }
+
+        // محرك 2: بديل قوي للانستقرام (سيرفر Cobalt مستقر)
+        const response = await fetch('https://co.wuk.sh/api/json', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                url: urlInput,
-                videoQuality: 'max',
-                downloadMode: 'auto'
-            })
+            body: JSON.stringify({ url: urlInput })
         });
 
-        if (!response.ok) {
-            throw new Error('فشل الاتصال');
-        }
-
+        if (!response.ok) throw new Error('فشل الاتصال');
         const data = await response.json();
 
         if (data.url) {
@@ -85,12 +92,11 @@ document.getElementById('downloadForm').addEventListener('submit', async (e) => 
             status.innerText = 'تم التجهيز! جاري فتح التحميل... 🚀';
             window.location.href = data.url;
         } else {
-            status.className = 'error';
-            status.innerText = 'تعذر استخراج الفيديو. تأكد من صحة الرابط.';
+            throw new Error('لا يوجد رابط');
         }
     } catch (err) {
         status.className = 'error';
-        status.innerText = 'سيرفر التحميل عليه ضغط حالياً. جرب مرة أخرى.';
+        status.innerText = 'عذراً، سيرفرات التحميل عليها ضغط أو الرابط غير صالح. جرب مرة أخرى!';
     } finally {
         btn.disabled = false;
         btn.innerText = 'تحميل المقطع الآن 🚀';
