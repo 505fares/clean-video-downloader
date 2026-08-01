@@ -20,11 +20,15 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(b'URL is required')
         return
 
-      # 1. طلب التنزيل مباشرة عبر Cobalt API المفتوحة
+      # 1. إعداد الطلب لسيرفر Cobalt مع إضافة User-Agent لمنع خطأ 403 Forbidden
       api_url = 'https://api.cobalt.tools/api/json'
       headers = {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
+          'User-Agent': (
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+              ' (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          ),
       }
 
       payload = json.dumps({
@@ -40,7 +44,7 @@ class handler(BaseHTTPRequestHandler):
       with urllib.request.urlopen(req) as response:
         res_data = json.loads(response.read().decode('utf-8'))
 
-      # 2. الحصول على رابط التحميل المباشر والتحويل إليه
+      # 2. الحصول على رابط التحميل أو إرجاع فيديو المقطع
       download_link = res_data.get('url')
 
       if download_link:
@@ -48,9 +52,11 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Location', download_link)
         self.end_headers()
       else:
-        self.send_response(500)
+        self.send_response(400)
         self.end_headers()
-        self.wfile.write(b'Failed to extract video URL')
+        self.wfile.write(
+            b'Could not fetch video. Please check the URL or try another link.'
+        )
 
     except Exception as e:
       self.send_response(500)
